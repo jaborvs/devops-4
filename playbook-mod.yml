@@ -1,0 +1,26 @@
+- hosts: master
+  tasks:
+
+    - ansible.builtin.debug:
+        msg: "docker swarm init  | grep 'docker swarm join --token'"
+
+    - name: docker swarm init
+      ansible.builtin.shell: "docker swarm init | grep 'docker swarm join --token'"
+      become: yes
+      register: join_cmd
+
+    - name: Add join cmd to dummy host
+      ansible.builtin.add_host:
+        name: "join_cmd_holder"
+        cmd: "{{ join_cmd.stdout }}"
+
+- hosts: worker
+  tasks:
+    - name: print join cmd
+      ansible.builtin.debug:
+        msg: "[Worker] {{ hostvars['join_cmd_holder']['cmd'] }}"
+
+    - name: join
+      ansible.builtin.shell: "{{ hostvars['join_cmd_holder']['cmd'] }}"
+      become: yes
+
